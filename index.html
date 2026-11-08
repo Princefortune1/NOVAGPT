@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#090b14">
+<title>Wonder Chat — Ask anything</title>
+<style>
+:root{color-scheme:dark;--bg:#090b14;--panel:#101525;--panel2:#151d31;--line:#27314c;--muted:#9ba7c3;--text:#f4f6ff;--accent:#8372ff;--cyan:#45c9db}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 Inter,system-ui,Arial,sans-serif;min-height:100vh}
+button,input,textarea{font:inherit}button{cursor:pointer;color:inherit}
+.app{min-height:100vh;display:flex}.sidebar{width:260px;background:#0d1220;border-right:1px solid var(--line);padding:18px 14px;display:flex;flex-direction:column;gap:14px;flex-shrink:0}
+.brand{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:850;letter-spacing:.3px;padding:4px 6px 12px}
+.logo{width:38px;height:38px;border-radius:13px;background:linear-gradient(140deg,#8a72ff,#27bfd3);display:grid;place-items:center;font-size:21px;box-shadow:0 5px 24px #7665ff55}
+.newchat,.side-action{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:11px 12px;text-align:left}
+.side-title{color:#7885a5;font-size:11px;text-transform:uppercase;letter-spacing:1.2px;padding:8px 8px 0}
+.history{display:flex;flex-direction:column;gap:5px;overflow:auto}
+.history button{border:0;background:transparent;text-align:left;padding:9px 10px;border-radius:9px;color:#c2cbe1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px}
+.history button:hover,.history button.active{background:#1a2339}
+.side-bottom{margin-top:auto;color:#7885a5;font-size:11px;padding:8px;line-height:1.6}
+.main{min-width:0;flex:1;display:flex;flex-direction:column;min-height:100vh}
+.topbar{height:62px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 22px;color:#aeb9d3;font-size:13px}
+.top-actions{display:flex;gap:8px}.small-btn{background:transparent;border:1px solid var(--line);border-radius:9px;padding:7px 10px;color:#c7d0e6}
+.chat{width:min(900px,100%);margin:0 auto;flex:1;padding:34px 22px 180px;display:flex;flex-direction:column;gap:18px}
+.welcome{text-align:center;margin:auto 0}.welcome h1{font-size:clamp(31px,5vw,49px);line-height:1.12;letter-spacing:-1.7px;margin:0 0 13px}.grad{background:linear-gradient(90deg,#9a83ff,#4bd2df);background-clip:text;-webkit-background-clip:text;color:transparent}
+.welcome p{color:var(--muted);margin:0 0 25px}.chips{display:flex;flex-wrap:wrap;gap:9px;justify-content:center}.chips button{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:9px 13px;color:#c8d2ea;font-size:13px}
+.msg{max-width:88%;padding:14px 16px;border-radius:17px;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.65}
+.msg.user{align-self:flex-end;background:#5146b6;border-bottom-right-radius:5px}
+.msg.assistant{align-self:flex-start;background:#141c2f;border:1px solid #2a3552;border-bottom-left-radius:5px}
+.msg img{display:block;max-width:min(100%,420px);max-height:420px;object-fit:contain;border-radius:12px;margin-top:10px}
+.msg-tools{display:flex;gap:12px;margin-top:9px}.msg-tools button{border:0;background:transparent;color:#aab6d3;font-size:12px;padding:0}
+.thinking{color:#aab5d0}.error{color:#ff9eae}
+.composer-wrap{position:fixed;bottom:0;left:260px;right:0;padding:18px 20px 19px;background:linear-gradient(transparent,var(--bg) 22%)}
+.composer-area{width:min(900px,100%);margin:auto}.attach-preview{display:none;align-items:center;gap:9px;margin:0 0 8px;padding:8px 10px;background:var(--panel);border:1px solid var(--line);border-radius:12px;width:max-content;max-width:100%}
+.attach-preview img{width:42px;height:42px;object-fit:cover;border-radius:7px}.attach-preview button{border:0;background:transparent;color:#cbd4e9}
+.composer{display:flex;align-items:flex-end;gap:8px;padding:9px;background:#141b2c;border:1px solid #35405f;border-radius:18px;box-shadow:0 14px 45px #0006}
+.composer textarea{flex:1;min-width:0;resize:none;max-height:140px;min-height:43px;border:0;outline:0;background:transparent;color:white;padding:10px 7px}
+.toolbtn{width:40px;height:40px;flex-shrink:0;border-radius:12px;border:1px solid var(--line);background:#202a43;color:#d9e1f5;font-size:17px}
+#send{height:42px;padding:0 16px;border:0;border-radius:12px;background:linear-gradient(135deg,#806dff,#258eae);font-weight:750}
+.hint{text-align:center;color:#7783a0;font-size:11px;margin-top:9px}
+.modal-backdrop{display:none;position:fixed;inset:0;background:#0009;z-index:5;align-items:center;justify-content:center;padding:20px}
+.modal{width:min(500px,100%);background:#121a2c;border:1px solid var(--line);border-radius:18px;padding:20px}
+.modal h2{margin:0 0 8px}.modal p{color:var(--muted);font-size:13px}.modal textarea{width:100%;min-height:100px;background:#0b1120;border:1px solid var(--line);border-radius:10px;padding:12px;color:white;resize:vertical}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}.primary{background:#6558d8;border:0;border-radius:10px;padding:10px 14px}.secondary{background:#222c43;border:1px solid var(--line);border-radius:10px;padding:10px 14px}
+.generated{max-width:100%;border-radius:13px;margin-top:10px}
+@media(max-width:700px){.sidebar{display:none}.composer-wrap{left:0;padding:12px 10px 15px}.chat{padding:25px 13px 165px}.msg{max-width:95%}.topbar{padding:0 14px}.top-actions .small-btn{font-size:11px;padding:6px 8px}}
+</style>
+</head>
+<body>
+<div class="app">
+ <aside class="sidebar">
+  <div class="brand"><div class="logo">✦</div>WONDER CHAT</div>
+  <button class="newchat" id="newChat">＋ &nbsp; New chat</button>
+  <div class="side-title">Your conversations</div>
+  <div class="history" id="historyList"></div>
+  <div class="side-bottom">Wonder Chat is an AI assistant. It can make mistakes, so verify important information.</div>
+ </aside>
+ <main class="main">
+  <header class="topbar"><span>✦ &nbsp; AI ASSISTANT</span><div class="top-actions"><button class="small-btn" id="imageMode">▧ Create image</button></div></header>
+  <section class="chat" id="chat">
+   <div class="welcome" id="welcome">
+    <h1>Welcome to <span class="grad">Wonder Chat</span></h1>
+    <p>Ask questions, explore ideas and create something amazing.</p>
+    <div class="chips">
+     <button>Explain a difficult school topic</button>
+     <button>Help me write a story</button>
+     <button>What can AI do?</button>
+    </div>
+   </div>
+  </section>
+  <div class="composer-wrap"><div class="composer-area">
+   <div class="attach-preview" id="attachPreview"><img id="previewImg" alt="Selected image"><span>Image attached</span><button id="removeImage" title="Remove image">✕</button></div>
+   <form class="composer" id="form">
+    <input type="file" id="imageInput" accept="image/png,image/jpeg,image/webp" hidden>
+    <button class="toolbtn" type="button" id="attach" title="Ask about an image">＋</button>
+    <button class="toolbtn" type="button" id="voice" title="Voice input">🎙</button>
+    <textarea id="prompt" rows="1" placeholder="Message Wonder Chat…"></textarea>
+    <button id="send" type="submit">Send ↑</button>
+   </form>
+   <div class="hint" id="hint">Enter to send · Shift + Enter for a new line · Images: PNG, JPG or WEBP</div>
+  </div></div>
+ </main>
+</div>
+
+<div class="modal-backdrop" id="imageModal">
+ <div class="modal">
+  <h2>✦ Generate an image</h2>
+  <p>Describe the picture you want Wonder Chat to create.</p>
+  <textarea id="imagePrompt" maxlength="1000" placeholder="A futuristic city at sunset, cinematic lighting…"></textarea>
+  <div class="modal-actions"><button class="secondary" id="cancelImage">Cancel</button><button class="primary" id="generateImage">Generate image</button></div>
+ </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const chat = $("chat"), promptBox = $("prompt"), sendBtn = $("send");
+let conversations = JSON.parse(localStorage.getItem("wonderConversations") || "[]");
+let currentId = null, attachedImage = null, imageMode = false, recognition = null;
+
+function save(){
+ // Keep chat text in browser storage, but avoid storing large image data URLs.
+ const compact = conversations.map(c => ({
+  ...c,
+  messages: c.messages.map(m => ({
+   role:m.role, content:m.content||"",
+   ...(m.citations?.length ? {citations:m.citations}:{}),
+   ...(m.image||m.hasImage ? {hasImage:true}:{}),
+   ...(m.generatedImage||m.hasGeneratedImage ? {hasGeneratedImage:true}:{})
+  }))
+ }));
+ localStorage.setItem("wonderConversations", JSON.stringify(compact));
+ renderHistory();
+}
+function current(){ return conversations.find(c => c.id === currentId); }
+function makeConversation(){
+ const c={id:crypto.randomUUID(),title:"New conversation",messages:[],updated:Date.now()};
+ conversations.unshift(c); currentId=c.id; save(); renderConversation();
+}
+function renderHistory(){
+ $("historyList").innerHTML="";
+ conversations.sort((a,b)=>b.updated-a.updated).forEach(c=>{
+  const b=document.createElement("button"); b.textContent=c.title||"New conversation";
+  b.className=c.id===currentId?"active":"";
+  b.onclick=()=>{currentId=c.id;renderConversation();renderHistory();};
+  $("historyList").appendChild(b);
+ });
+}
+function addMessageToDOM(m){
+ $("welcome")?.remove();
+ const el=document.createElement("div"); el.className="msg "+m.role;
+ const text=document.createElement("div"); text.textContent=m.content||""; el.appendChild(text);
+ if(m.image){const im=document.createElement("img");im.src=m.image;im.alt="Image shared in conversation";el.appendChild(im);}
+ else if(m.hasImage){const note=document.createElement("small");note.textContent="(Image attachment preview is not saved after refresh)";el.appendChild(note);}
+ if(m.generatedImage){const im=document.createElement("img");im.src=m.generatedImage;im.alt="AI generated image";im.className="generated";el.appendChild(im);}
+ else if(m.hasGeneratedImage){const note=document.createElement("small");note.textContent="(Generated image preview is not saved after refresh)";el.appendChild(note);}
+ if(m.role==="assistant"){
+  if(m.citations?.length){
+   const sources=document.createElement("div");sources.className="msg-tools";
+   const label=document.createElement("span");label.textContent="Sources:";sources.appendChild(label);
+   m.citations.slice(0,6).forEach(c=>{
+    const a=document.createElement("a");a.href=c.url;a.target="_blank";a.rel="noopener noreferrer";
+    a.textContent=c.title||"Source";a.style.color="#9fb5ff";a.style.fontSize="12px";sources.appendChild(a);
+   });
+   el.appendChild(sources);
+  }
+  const tools=document.createElement("div");tools.className="msg-tools";
+  const copy=document.createElement("button");copy.textContent="Copy";copy.onclick=()=>navigator.clipboard.writeText(m.content||"");
+  const speak=document.createElement("button");speak.textContent="Read aloud";speak.onclick=()=>speakText(m.content||"");
+  tools.append(copy,speak);el.appendChild(tools);
+ }
+ chat.appendChild(el); window.scrollTo({top:document.body.scrollHeight,behavior:"smooth"});
+}
+function renderConversation(){
+ chat.innerHTML="";
+ const c=current();
+ if(!c||!c.messages.length){chat.innerHTML=`<div class="welcome" id="welcome"><h1>Welcome to <span class="grad">Wonder Chat</span></h1><p>Ask questions, explore ideas and create something amazing.</p><div class="chips"><button>Explain a difficult school topic</button><button>Help me write a story</button><button>What can AI do?</button></div></div>`;}
+ else c.messages.forEach(addMessageToDOM);
+ bindChips();
+}
+function bindChips(){chat.querySelectorAll(".chips button").forEach(b=>b.onclick=()=>{promptBox.value=b.textContent;sendChat();});}
+function pushMessage(m){
+ const c=current(); if(!c)return;
+ c.messages.push(m); c.updated=Date.now();
+ if(c.messages.filter(x=>x.role==="user").length===1)c.title=(m.content||"New conversation").slice(0,34);
+ addMessageToDOM(m);save();
+}
+function speakText(text){
+ if(!("speechSynthesis" in window)){alert("Read aloud is not supported in this browser.");return;}
+ speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(text);speechSynthesis.speak(u);
+}
+function setBusy(b){sendBtn.disabled=b;sendBtn.textContent=b?"…":"Send ↑";}
+async function sendChat(){
+ const question=promptBox.value.trim();
+ if((!question&&!attachedImage)||sendBtn.disabled)return;
+ if(!current())makeConversation();
+ const image=attachedImage;
+ const message={role:"user",content:question||(image?"What is in this picture?":"")};
+ if(image)message.image=image;
+ pushMessage(message); promptBox.value=""; promptBox.style.height="auto"; clearAttached();
+ const waiting={role:"assistant",content:"Thinking…"};
+ const waitEl=document.createElement("div");waitEl.className="msg assistant thinking";waitEl.textContent=waiting.content;chat.appendChild(waitEl);
+ setBusy(true);
+ try{
+  const msgs=current().messages.slice(-20).map(m=>({role:m.role,content:m.content||"",...(m.image?{imageDataUrl:m.image}:{})}));
+  const r=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages:msgs})});
+  const data=await r.json();if(!r.ok)throw new Error(data.error||"Request failed");
+  waitEl.remove();pushMessage({role:"assistant",content:data.answer,citations:data.citations||[]});
+ }catch(e){waitEl.textContent=e.message;waitEl.classList.add("error");}
+ finally{setBusy(false);promptBox.focus();}
+}
+$("form").addEventListener("submit",e=>{e.preventDefault();sendChat();});
+promptBox.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendChat();}});
+promptBox.addEventListener("input",()=>{promptBox.style.height="auto";promptBox.style.height=Math.min(promptBox.scrollHeight,140)+"px";});
+$("newChat").onclick=()=>makeConversation();
+$("attach").onclick=()=>$("imageInput").click();
+$("imageInput").onchange=async e=>{
+ const file=e.target.files?.[0];if(!file)return;
+ if(file.size>6*1024*1024){alert("Please choose an image smaller than 6 MB.");e.target.value="";return;}
+ const reader=new FileReader();reader.onload=()=>{attachedImage=reader.result;$("previewImg").src=attachedImage;$("attachPreview").style.display="flex";};reader.readAsDataURL(file);
+};
+function clearAttached(){attachedImage=null;$("imageInput").value="";$("attachPreview").style.display="none";}
+$("removeImage").onclick=clearAttached;
+$("voice").onclick=()=>{
+ const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+ if(!SR){alert("Voice typing is not supported in this browser. Try a supported browser or use your keyboard microphone.");return;}
+ if(recognition){recognition.stop();return;}
+ recognition=new SR();recognition.lang="en-NG";recognition.interimResults=false;recognition.onresult=e=>{promptBox.value+=(promptBox.value?" ":"")+e.results[0][0].transcript;};
+ recognition.onerror=()=>{};recognition.onend=()=>{recognition=null;$("voice").textContent="🎙";};
+ $("voice").textContent="■";recognition.start();
+};
+$("imageMode").onclick=()=>$("imageModal").style.display="flex";
+$("cancelImage").onclick=()=>$("imageModal").style.display="none";
+$("generateImage").onclick=async()=>{
+ const prompt=$("imagePrompt").value.trim();if(!prompt)return;
+ const btn=$("generateImage");btn.disabled=true;btn.textContent="Creating…";
+ if(!current())makeConversation();
+ pushMessage({role:"user",content:"Create an image: "+prompt});
+ const wait=document.createElement("div");wait.className="msg assistant thinking";wait.textContent="Creating your image…";chat.appendChild(wait);
+ try{
+  const r=await fetch("/api/image",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt})});
+  const data=await r.json();if(!r.ok)throw new Error(data.error||"Image generation failed");
+  wait.remove();pushMessage({role:"assistant",content:"Here is the image I generated.",generatedImage:data.imageDataUrl});
+  $("imageModal").style.display="none";$("imagePrompt").value="";
+ }catch(e){wait.textContent=e.message;wait.classList.add("error");}
+ finally{btn.disabled=false;btn.textContent="Generate image";}
+};
+if(!conversations.length)makeConversation();else{currentId=conversations[0].id;renderHistory();renderConversation();}
+bindChips();
+</script>
+</body>
+</html>
